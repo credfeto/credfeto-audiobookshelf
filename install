@@ -1,0 +1,131 @@
+#! /bin/sh
+
+die() {
+    echo
+    echo "$@"
+    exit 1
+}
+
+# Setup .bashrc
+{
+    echo "alias ls='ls -aFh --color=always'"
+    echo "alias ll='ls -Fls'"
+    echo "alias dns='curl -sSL https://raw.githubusercontent.com/credfeto/credfeto-setup-arch-vm/refs/heads/main/dns | sh"
+    echo "alias chaotic-aur='curl -sSL https://raw.githubusercontent.com/credfeto/credfeto-setup-arch-vm/refs/heads/main/chaotic-aur | sh"
+} >> "$HOME/.bashrc"
+
+echo "Updating pacman.conf"
+
+sed -i "s|^Include = /etc/pacman.d/mirrorlist$|Include = /etc/pacman.d/mirrorlist\nCacheServer = https://pacman.markridgwell.com/repo/archlinux/\$repo/os/\$arch|" /etc/pacman.conf || die "Could not update pacman.conf"
+
+# Chaotic AUR install
+#echo "Y | pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+#echo "Y | pacman-key --lsign-key 3056513887B78AEB
+#pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' --noconfirm
+#pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' --noconfirm
+#
+#cat << EOF >> /etc/pacman.conf
+#
+#[chaotic-aur]
+#Include = /etc/pacman.d/chaotic-mirrorlist
+#CacheServer = https://pacman.markridgwell.com/repo/chaotic-aur/x86_64
+#EOF
+
+# when runc was broken
+#sed -i "s|#IgnorePkg   =|IgnorePkg   = runc|" /etc/pacman.conf || die "Could not update pacman.conf"
+
+
+echo "Updating Packages"
+pacman -Syu --noconfirm || die "Could not update dist"
+
+#echo "Explicit RUNC version"
+#curl https://archive.archlinux.org/packages/r/runc/runc-1.3.2-1-x86_64.pkg.tar.zst -o runc-1.3.2-1-x86_64.pkg.tar.zst && pacman -U --noconfirm ./runc-1.3.2-1-x86_64.pkg.tar.zst
+
+echo "Ensuring packages is installed"
+pacman -S --noconfirm --needed docker docker-compose docker-buildx git pigz criu firewalld pkgstats reflector || die "Could not install docker"
+
+
+echo "Configuring Reflector"
+cat << EOF > /etc/xdg/reflector/reflector.conf
+--save /etc/pacman.d/mirrorlist
+--protocol https
+--latest 10
+--sort rate
+EOF
+
+systemctl enable --now reflector.timer
+systemctl start reflector.service
+
+echo "Configuring Docker Mirror"
+
+RESTART=0
+[ -d /etc/docker ] || mkdir -p /etc/docker
+if [ ! -f /etc/docker/daemon.json ]; then
+  {
+    echo "{"
+    echo "   \"registry-mirrors\" : [\"https://docker-cache.markridgwell.com\"]"
+    echo "}"
+  } > /etc/docker/daemon.json
+  RESTART=1
+fi
+
+echo "Enabling Docker"
+systemctl enable --now docker.socket || die "Could not enable docker timer"
+systemctl enable --now docker || die "Could not enable docker.service"
+
+echo "Enabling pkgstats"
+sudo systemctl start pkgstats.timer
+
+echo "Enabling firewalld"
+systemctl enable --now firewalld
+
+echo "Installing auto-update service"
+{
+  echo "[Unit]"
+  echo "Description=Run arch-update auto check"
+  echo "After=network-online.target"
+  echo ""
+  echo "[Service]"
+  echo "Type=oneshot"
+  echo "ExecStart=pacman -Syyu --noconfirm"
+} > /etc/systemd/system/auto-update.service
+
+
+{
+  echo "[Unit]"
+  echo "Description=Run arch-update auto check at boot and then every hour"
+  echo ""
+  echo "[Timer]"
+  echo "OnStartupSec=15"
+  echo "OnUnitActiveSec=1h"
+  echo ""
+  echo "[Install]"
+  echo "WantedBy=timers.target"
+} > /etc/systemd/system/auto-update.timer
+
+systemctl daemon-reload || die "could not update systemd daemon config"
+
+systemctl enable --now auto-update.timer || die "Could not enable service"
+
+echo "Configuring network"
+{
+  echo "[Match]"
+  echo "Name=eth0"
+  echo ""
+  echo "[Link]"
+  echo "RequiredForOnline=routable"
+  echo ""
+  echo "[Network]"
+  echo "DHCP=yes"
+  echo "IPv6AcceptRA=yes"
+  echo "IgnoreCarrierLoss=3s"
+  echo "IPv6PrivacyExtensions=prefer-public"
+} > /etc/systemd/network/eth0.network
+
+systemctl daemon-reload
+
+[ "RESTART" = "1" ] && systemctl restart docker
+
+networkctl reload
+
+echo "Done"
