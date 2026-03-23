@@ -1,0 +1,11 @@
+#! /bin/sh
+
+die() {
+    echo
+    echo "$@"
+    exit 1
+}
+
+
+docker compose pull || die "Failed to pull images"
+docker compose up -d || die "Failed to start containers"

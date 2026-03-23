@@ -1,0 +1,69 @@
+services:
+  watchtower:
+    image: nickfedor/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    environment:
+      WATCHTOWER_NOTIFICATIONS_HOSTNAME: audiobookshelf
+      WATCHTOWER_POLL_INTERVAL: 3600
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080/tcp"
+    environment:
+      DOZZLE_HOSTNAME: cctv
+      # Uncomment to enable container actions (stop, start, restart). See https://dozzle.dev/guide/actions
+      # - DOZZLE_ENABLE_ACTIONS=true
+      #
+      # Uncomment to allow access to container shells. See https://dozzle.dev/guide/shell
+      # - DOZZLE_ENABLE_SHELL=true
+      #
+      # Uncomment to enable authentication. See https://dozzle.dev/guide/authentication
+      # - DOZZLE_AUTH_PROVIDER=simple
+    restart: always
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 3s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+
+  audiobookshelf:
+    container_name: audiobookshelf
+    restart: always
+    stop_grace_period: 30s
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    volumes:
+      - bookshelf_config:/config
+      - bookshelf_metadata:/metadata
+      - bookshelf_audiobooks:/audiobooks
+      - bookshelf_books:/books
+      - bookshelf_podcasts:/podcasts
+    ports:
+      - "13378:80"
+    environment:
+      - TZ=Europe/London
+
+volumes:
+  bookshelf_config:
+    name: bookshelf_config
+    external: true
+  bookshelf_metadata:
+    name: bookshelf_metadata
+    external: true    
+  bookshelf_audiobooks:
+    name: bookshelf_audiobooks
+    external: true
+  bookshelf_books:
+    name: bookshelf_books
+    external: true
+  bookshelf_podcasts:
+    name: bookshelf_podcasts
+    external: true
