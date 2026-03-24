@@ -7,5 +7,54 @@ die() {
 }
 
 
+git pull || die "Failed to get latest config"
+
+
+## UI
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="10.0.0.0/8" port protocol="tcp" port="13378" accept'
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.0.0/16" port protocol="tcp" port="13378" accept'
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="172.16.0.0/20" port protocol="tcp" port="13378" accept'
+
+
+# Create storage
+[ -d "/data/bookshelf" ] || sudo mkdir /data/bookshelf
+[ -d "/data/bookshelf/config" ] || sudo mkdir /data/bookshelf/config
+[ -d "/data/bookshelf/metadata" ] || sudo mkdir /data/bookshelf/metadata
+[ -d "/data/bookshelf/audiobooks" ] || sudo mkdir /data/bookshelf/audiobooks
+[ -d "/data/bookshelf/books" ] || sudo mkdir /data/bookshelf/books
+[ -d "/data/bookshelf/podcasts" ] || sudo mkdir /data/bookshelf/podcasts
+
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/bookshelf/config \
+  bookshelf_config
+
+sudo docker volume create \
+    --opt type=none \
+    --opt o=bind \
+    --opt device=/data/bookshelf/metadata \
+    bookshelf_metadata
+
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/bookshelf/audiobooks \
+  bookshelf_audiobooks
+
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/bookshelf/books \
+  bookshelf_books
+
+sudo docker volume create \
+  --opt type=none \
+  --opt o=bind \
+  --opt device=/data/bookshelf/podcasts \
+  bookshelf_podcasts
+
+
 docker compose pull || die "Failed to pull images"
 docker compose up -d || die "Failed to start containers"
+
