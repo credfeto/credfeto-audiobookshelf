@@ -43,7 +43,12 @@ services:
     volumes:
       - bookshelf_config:/config
       - bookshelf_metadata:/metadata
-      - bookshelf_audiobooks:/audiobooks
+      - type: bind
+        source: /data/bookshelf/audiobooks
+        target: /audiobooks
+        bind:
+          propagation: rshared
+          create_host_path: true
       - bookshelf_books:/books
       - bookshelf_podcasts:/podcasts
     ports:
