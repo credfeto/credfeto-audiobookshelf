@@ -1,3 +1,4 @@
+---
 services:
   watchtower:
     image: nickfedor/watchtower:latest
@@ -18,13 +19,16 @@ services:
       - "8080:8080/tcp"
     environment:
       DOZZLE_HOSTNAME: cctv
-      # Uncomment to enable container actions (stop, start, restart). See https://dozzle.dev/guide/actions
+      # Uncomment to enable container actions (stop, start, restart).
+      # See https://dozzle.dev/guide/actions
       # - DOZZLE_ENABLE_ACTIONS=true
       #
-      # Uncomment to allow access to container shells. See https://dozzle.dev/guide/shell
+      # Uncomment to allow access to container shells.
+      # See https://dozzle.dev/guide/shell
       # - DOZZLE_ENABLE_SHELL=true
       #
-      # Uncomment to enable authentication. See https://dozzle.dev/guide/authentication
+      # Uncomment to enable authentication.
+      # See https://dozzle.dev/guide/authentication
       # - DOZZLE_AUTH_PROVIDER=simple
     restart: always
     healthcheck:
@@ -62,7 +66,7 @@ volumes:
     external: true
   bookshelf_metadata:
     name: bookshelf_metadata
-    external: true    
+    external: true
   bookshelf_audiobooks:
     name: bookshelf_audiobooks
     external: true
