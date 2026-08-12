@@ -59,6 +59,13 @@ services:
       - "13378:80"
     environment:
       - TZ=Europe/London
+      # Without this, the app falls back to its own built-in default of
+      # /audiobookshelf (see advplyr/audiobookshelf index.js), serving itself
+      # from a subfolder even on a dedicated subdomain. Audiobookshelf's own
+      # docs list that as unsupported and a known cause of socket auth
+      # failures ("Cannot validate socket - invalid token" in the app log).
+      # See: https://github.com/credfeto/credfeto-audiobookshelf/issues/8
+      - ROUTER_BASE_PATH=
 
 volumes:
   bookshelf_config:
