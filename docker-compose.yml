@@ -59,13 +59,15 @@ services:
       - "13378:80"
     environment:
       - TZ=Europe/London
-      # Without this, the app falls back to its own built-in default of
-      # /audiobookshelf (see advplyr/audiobookshelf index.js), serving itself
-      # from a subfolder even on a dedicated subdomain. Audiobookshelf's own
-      # docs list that as unsupported and a known cause of socket auth
-      # failures ("Cannot validate socket - invalid token" in the app log).
-      # See: https://github.com/credfeto/credfeto-audiobookshelf/issues/8
-      - ROUTER_BASE_PATH=
+      # Do NOT set ROUTER_BASE_PATH="" here — see #8/#9. It changes the
+      # server's routing to root, but the ghcr.io/advplyr/audiobookshelf
+      # image ships a statically pre-built client (/app/client/dist) with
+      # /audiobookshelf hardcoded into every asset path, the socket.io
+      # path, and the PWA manifest at IMAGE BUILD TIME. Server and client
+      # then disagree on the base path, and every asset/socket request
+      # 404s/502s. Fixing this properly needs a custom-built image with
+      # ROUTER_BASE_PATH baked in at build time, not a runtime env var
+      # against the stock image. Reverted in #10.
 
 volumes:
   bookshelf_config:
