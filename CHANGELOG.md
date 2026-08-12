@@ -12,7 +12,6 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ### Security
 ### Added
 ### Fixed
-- Audiobookshelf now serves from the root of its subdomain instead of the /audiobookshelf subfolder, fixing recurring socket authentication failures
 ### Changed
 ### Deprecated
 ### Removed
