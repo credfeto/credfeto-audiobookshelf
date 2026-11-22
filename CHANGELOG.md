@@ -13,9 +13,11 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ### Added
 ### Fixed
 ### Changed
+- `./update` runs `docker compose up -d --remove-orphans`, so containers removed from docker-compose.yml (such as dozzle) are removed from the host too
 - Watchtower now updates on a configurable cron schedule (WATCHTOWER_SCHEDULE, default hourly) instead of a poll interval, and removes superseded images (WATCHTOWER_CLEANUP)
 ### Deprecated
 ### Removed
+- Dozzle log viewer (port 8080, no authentication, Docker socket mounted): container logs now go to the journal and on to VictoriaLogs (credfeto-setup-arch-vm journald log driver), so it duplicated that
 ### Deployment Changes
 - WATCHTOWER_POLL_INTERVAL replaced by WATCHTOWER_SCHEDULE (6-field cron); override via .env
 

@@ -56,4 +56,4 @@ sudo docker volume create \
 
 
 docker compose pull || die "Failed to pull images"
-docker compose up -d || die "Failed to start containers"
+docker compose up -d --remove-orphans || die "Failed to start containers"
